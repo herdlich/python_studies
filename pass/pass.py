@@ -1,6 +1,6 @@
-pass1 = input('Введите пароль: ')
-pass2 = input('Повторите пароль: ')
+pass1 = input('Enter the password: ')
+pass2 = input('Repeat your password: ')
 if pass1 == pass2:
-    print('Регистрация успешна!')
+    print('Registration was successful!')
 else:
-    print('ОШИБКА! Пароль должен совпадать.')
+    print('MISTAKE! Passwords must match.')
