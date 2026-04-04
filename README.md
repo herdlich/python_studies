@@ -1,31 +1,94 @@
-# 🐍 Python Learning Journey
+# 🐍 Python Studies
 
-This repository contains my practical exercises, tasks, and small projects as I learn Python step by step.
+A personal repository where I document my Python learning journey through exercises, topic-based practice, and small projects.
 
 ## 📂 Project Structure
 
-The repository is organized into thematic modules, each focused on a specific concept:
+```text
+python_studies/
+│
+├── 01_basics
+├── 02_lists_functions
+├── 03_loops
+├── 04_conditionals
+├── 05_strings
+├── 06_oop
+├── projects
+└── README.md
+```
 
-- **[01_basics](./01_basics)** — Core concepts: variables, data types, and basic input/output
-- **[02_strings](./02_strings)** — String manipulation and formatting
-- **[03_math_ops](./03_math_ops)** — Mathematical operations and logical expressions
-- **[04_conditionals](./04_conditionals)** — Control flow using `if`, `elif`, and `else`
-- **[05_loops](./05_loops)** — Iteration with `for` and `while` loops
-- **[06_lists](./06_lists)** — Working with lists, slicing, and list methods
+## 📚 Topics Covered
 
-## 📌 Included Practice Project
+### 01_basics
+Core Python concepts such as:
+- variables
+- data types
+- input/output
+- basic syntax
 
-- **[password_verifier](./04_conditionals/password_verifier)** — A simple script for validating user passwords
+### 02_lists_functions
+Practice with:
+- lists
+- list methods
+- function definition
+- function arguments and return values
 
-## 🛠️ Getting Started
+### 03_loops
+Iteration with:
+- `for`
+- `while`
+- loop-based exercises
 
-### Prerequisites
+### 04_conditionals
+Decision-making with:
+- `if`
+- `elif`
+- `else`
+- logical conditions
 
-Make sure you have **Python 3.10+** installed on your machine.
+### 05_strings
+String-related practice:
+- indexing
+- slicing
+- methods
+- formatting
 
-### Installation
+### 06_oop
+Introduction to object-oriented programming:
+- classes
+- objects
+- attributes
+- methods
 
-Clone the repository:
+### projects
+Small practical programs built during the learning process.
+
+## 🎯 Goal
+
+This repository helps me:
+- organize my Python practice
+- track learning progress
+- improve problem-solving skills
+- build a strong programming foundation
+
+## ▶️ Running the Code
+
+Use Python to run any file:
 
 ```bash
-git clone https://github.com/herdlich/python_studies.git
+python filename.py
+```
+
+Example:
+
+```bash
+python 03_loops/working_with_numbers.py
+```
+
+## 📌 Disclaimer
+
+This repository is part of my learning process, so code and structure may be updated as I continue studying.
+
+## 👤 Author
+
+**herdlich**
