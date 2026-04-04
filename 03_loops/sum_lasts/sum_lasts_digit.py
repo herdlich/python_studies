@@ -5,7 +5,5 @@ while n > 9:
         last_digit = n % 10
         sum += last_digit
         n //= 10
-    else:
-        n = sum
-else:
-    print(n)
+    n = sum
+print(n)
