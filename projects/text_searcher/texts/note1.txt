@@ -1,0 +1,2 @@
+Python is a popular programming language.
+It is often used for automation.

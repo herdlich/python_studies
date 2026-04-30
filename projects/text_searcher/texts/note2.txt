@@ -1,0 +1,2 @@
+Today I learned how to work with files.
+Python can read and write text files.
