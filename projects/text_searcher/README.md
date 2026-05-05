@@ -1,85 +1,38 @@
-# Text Searcher
+# Text Search Tool
 
-A simple console program that searches for a word in several text files.
+Simple Python script to search for a word across multiple `.txt` files in a folder.
 
 ## Features
 
-- searches for a word in `.txt` files
-- search is case-insensitive
-- shows the file name where the word was found
-- shows the line number
-- highlights the searched word with angle brackets
-- prints a message if nothing is found
-- saves search results to `result.txt`
-
-## Project structure
-
-```text
-text_searcher/
-├── main.py
-├── README.md
-├── result.txt
-└── texts/
-    ├── note1.txt
-    ├── note2.txt
-    └── note3.txt
-```
+- Searches all `.txt` files in a directory
+- Case-insensitive matching
+- Shows line numbers for each match
+- Outputs results to both console and file (`results.txt`)
+- Displays match count per file and total matches
 
 ## How it works
 
-The program searches through the files inside the `texts/` folder.
+1. Place your `.txt` files inside the `texts/` folder
+2. Run the script
+3. Enter a search term
+4. View results in:
+   - Console output
+   - `results.txt` file
 
-If the searched word is found, the program prints the result to the console and saves it to `result.txt`.
+## Example output
 
-Example output:
+file1.txt:
+1 line: example text
+3 line: another match
+Matches: 2
 
-```text
-file: note1.txt, line: 2: this line contains <PYTHON>
-```
+Total number of matches: 2
 
-## Run
+## Requirements
 
-```bash
-python main.py
-```
-
-## Example
-
-```text
-Enter your word for search: python
-file: note1.txt, line: 1: <PYTHON> is a popular programming language.
-file: note2.txt, line: 2: i use <PYTHON> for automation.
-```
-
-The same result will be saved to:
-
-```text
-result.txt
-```
+- Python 3.x
 
 ## Notes
 
-The current version has one main drawback: the entire matched line is converted to lowercase before highlighting the searched word.
-
-For example:
-
-```text
-Python is a Popular Programming Language.
-```
-
-becomes:
-
-```text
-<PYTHON> is a popular programming language.
-```
-
-This project was created for practicing:
-
-- working with files
-- reading text files
-- writing results to a file
-- loops
-- functions
-- string methods
-- case-insensitive search
-- `enumerate()`
+- The results file is overwritten on each run
+- Only `.txt` files are processed
