@@ -15,6 +15,9 @@ sort_list = {'Images': ['.jpg', '.jpeg', '.png'],
              'Audio': ['.mp3', '.wav', '.aac', '.flac'],
              'Videos': ['.mp4', '.avi', '.mkv', '.mov']}
 
+if not path.exists():
+    path.mkdir(parents=True, exist_ok=True)
+
 
 def file_sorter():
     # Creates target folders and moves files there
