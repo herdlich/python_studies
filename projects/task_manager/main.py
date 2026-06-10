@@ -12,8 +12,8 @@ def json_load():
         with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    except FileNotFoundError:
-        logging.error('FileNotFoundError')
+    except (FileNotFoundError, json.JSONDecodeError):
+        logging.error('JSON file not found or corrupted')
         return {}
 
 
@@ -60,7 +60,7 @@ def add_task():
         print('Invalid priority')
         return
 
-    status = input('Set a status\n1. Todo\n2. In progress\n 3. Done\nEnter: ')
+    status = input('Set a status\n1. Todo\n2. In progress\n3. Done\nEnter: ')
     statuses = {'1': 'todo', '2': 'in_progress', '3': 'done'}
     if status not in statuses:
         print('Invalid status')
@@ -70,7 +70,6 @@ def add_task():
                     'priority': priorities[priority],
                     'status': statuses[status],
                     'date': input('Enter a date: ')}
-
 
     save_json(data)
     logging.info(f'Added task ID {new_id}')
@@ -85,7 +84,8 @@ def read_task():
             print_task(task_id, task_info)
 
     else:
-        logging.error('No tasks found')
+        logging.info('No tasks found')
+        print('No tasks found')
         return
 
 
@@ -107,7 +107,7 @@ def delete_task():
             print('ID not found')
 
     else:
-        logging.error('No tasks found')
+        logging.info('No tasks found')
         return
 
 
@@ -117,16 +117,21 @@ def search_task():
     if data:
         user_search = input('Enter a search query: ').strip().lower()
 
+        found = False
         for task_id, task_info in data.items():
             title = task_info.get('title', '').lower()
             description = task_info.get('description', '').lower()
 
             if user_search in title or user_search in description:
+                found = True
                 logging.info(f'User query found in {task_id} ID: "{user_search}"')
-                print(f'ID {task_id}:\n{task_info}')
+                print_task(task_id, task_info)
+
+        if not found:
+            print('No matches found')
 
     else:
-        logging.error('No tasks found')
+        logging.info('No tasks found')
         return
 
 
@@ -134,43 +139,62 @@ def change_status():
     data = load_tasks()
 
     if data:
-        user_id = input('Enter a ID: ')
+        user_id = input('Enter an ID: ')
 
-        if user_id in data:
-            new_status = input('Set a status\n1. Todo\n2. In progress\n 3. Done\nEnter: ')
-            statuses = {'1': 'todo', '2': 'in_progress', '3': 'done'}
-
-            if new_status not in statuses:
-                print('Invalid status')
-                return
-
-            data[user_id]['status'] = statuses[new_status]
-
-            save_json(data)
-            logging.info(f'Changed status: - {data[user_id]["status"]}')
-            print('Status updated!')
-
-        else:
+        if user_id not in data:
             print('ID not found')
             return
 
+        status = input(
+            'Set a status\n'
+            '1. Todo\n'
+            '2. In progress\n'
+            '3. Done\n'
+            'Enter: '
+        )
+
+        statuses = {'1': 'todo', '2': 'in_progress', '3': 'done'}
+
+        if status not in statuses:
+            print('Invalid status')
+            return
+
+        data[user_id]['status'] = statuses[status]
+
+        save_json(data)
+        logging.info(f'Changed status for task ID {user_id}: {data[user_id]["status"]}')
+        print('Status updated!')
+
     else:
-        logging.error('No tasks found')
-        return
+        logging.info('No tasks found')
+        print('No tasks found')
 
 
 def filter_priority():
     data = load_tasks()
 
     if data:
-        user_priority = input('Enter the priority to search for: ')
+        priority = input('Set a priority:\n1. Low\n2. Medium\n3. High\nEnter:')
 
+        priorities = {'1': 'Low', '2': 'Medium', '3': 'High'}
+
+        if priority not in priorities:
+            print('Invalid priority')
+            return
+
+        selected_priority = priorities[priority]
+
+        found = False
         for task_id, task_info in data.items():
-            if task_info['priority'] == user_priority:
+            if task_info['priority'] == selected_priority:
                 print_task(task_id, task_info)
+                found = True
+
+        if not found:
+            print('No tasks found with this priority')
 
     else:
-        logging.error('No tasks found')
+        logging.info('No tasks found')
         return
 
 
@@ -178,15 +202,35 @@ def filter_status():
     data = load_tasks()
 
     if data:
-        user_status = input('Enter the status to filter for: ')
+        status = input(
+            'Set a status\n'
+            '1. Todo\n'
+            '2. In progress\n'
+            '3. Done\n'
+            'Enter: '
+        )
+
+        statuses = {'1': 'todo', '2': 'in_progress', '3': 'done'}
+
+        if status not in statuses:
+            print('Invalid status')
+            return
+
+        selected_status = statuses[status]
+
+        found = False
 
         for task_id, task_info in data.items():
-            if task_info['status'] == user_status:
+            if task_info['status'] == selected_status:
                 print_task(task_id, task_info)
+                found = True
+
+        if not found:
+            print('No tasks found with this status')
 
     else:
-        logging.error('No tasks found')
-        return
+        logging.info('No tasks found')
+        print('No tasks found')
 
 
 menu_options = {'1': add_task, '2': read_task, '3': delete_task, '4': search_task, '5': change_status,
