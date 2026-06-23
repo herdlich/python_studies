@@ -4,24 +4,24 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-path_page = Path("page.html")
 path_result = Path("result.csv")
 
-BASE_URL = "https://books.toscrape.com/"
+BASE_URL = "https://books.toscrape.com/catalogue/"
 
 
-def download_html():
+def download_html(url):
     headers = {
         "User-Agent": "Mozilla/5.0"
     }
 
     try:
-        response = requests.get(BASE_URL, headers=headers, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10)
 
         if response.status_code == 200:
-            path_page.write_text(response.text, encoding="utf-8")
-            print("HTML saved successfully")
-            return True
+            html_text = response.text
+
+            return html_text
+
         else:
             print("Page was not downloaded")
             return False
@@ -49,6 +49,15 @@ def get_text_or_empty(element):
     return result
 
 
+def get_attr_or_empty(element, attr):
+    if not element:
+        result = ""
+    else:
+        result = element.get(attr)
+
+    return result
+
+
 def clean_price(price):
     price = price.replace("Â", "")
     price = price.replace("£", "")
@@ -57,8 +66,7 @@ def clean_price(price):
     return price
 
 
-def html_parser():
-    html_text = path_page.read_text(encoding="utf-8")
+def parse_books(html_text):
     soup = BeautifulSoup(html_text, "html.parser")
     cards = soup.find_all("article", class_="product_pod")
 
@@ -69,21 +77,16 @@ def html_parser():
         stock_element = card.find("p", class_="availability")
         link_element = card.find("h3").find("a")
 
-        title = link_element.get("title")
-        price = get_text_or_empty(price_element)
+        title = get_attr_or_empty(link_element, "title")
 
+        price = get_text_or_empty(price_element)
         price = clean_price(price)
 
         stock = get_text_or_empty(stock_element)
-        link = link_element.get("href")
+
+        link = get_attr_or_empty(link_element, "href")
 
         link = urljoin(BASE_URL, link)
-
-        print(f"Title: {title}\n"
-              f"Price: {price}\n"
-              f"Stock: {stock}\n"
-              f"Link: {link}")
-        print("-" * 40)
 
         card_dict = {
             "title": title,
@@ -94,22 +97,35 @@ def html_parser():
 
         books.append(card_dict)
 
-    if not books:
+    return books
+
+
+def parse_all_pages():
+    all_books = []
+
+    pages_count = 0
+    for page_number in range(1, 4):
+        url = f"https://books.toscrape.com/catalogue/page-{page_number}.html"
+
+        html_text = download_html(url)
+
+        if not html_text:
+            continue
+
+        books_list = parse_books(html_text)
+
+        all_books.extend(books_list)
+
+        pages_count += 1
+
+    if not all_books:
         print("No books found")
         return
 
-    print(f"Books found: {len(books)}")
+    print(f"Pages processed: {pages_count}")
+    print(f"Books saved: {len(all_books)}")
 
-    save_csv(path_result, books)
-
-
-def main():
-    successful = download_html()
-
-    if not successful:
-        return
-
-    html_parser()
+    save_csv(path_result, all_books)
 
 
-main()
+parse_all_pages()
