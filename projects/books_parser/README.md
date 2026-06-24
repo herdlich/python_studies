@@ -12,20 +12,22 @@ A Python web scraper that collects book data from [Books to Scrape](https://book
   * price
   * stock status
   * product link
-* Supports pagination across 50 catalogue pages
+* Supports pagination
+* Supports command-line arguments
 * Converts relative product links to full URLs
 * Cleans price values
-* Saves collected data to `result.csv`
-* Writes parser logs to `logs/parser.log`
+* Saves collected data to a CSV file
+* Writes logs to `logs/parser.log`
 
 ## Technologies
 
 * Python
 * requests
 * BeautifulSoup4
+* argparse
+* logging
 * csv
 * pathlib
-* logging
 * urllib.parse
 
 ## Installation
@@ -49,24 +51,37 @@ beautifulsoup4
 
 ## Usage
 
-Run the script:
+Run with default settings:
 
 ```bash
 python main.py
 ```
 
-After running, the script will:
+By default, the script parses 50 pages and saves the result to:
 
-* scrape book data from 50 catalogue pages
-* save results to `result.csv`
-* create logs in `logs/parser.log`
+```text
+result.csv
+```
+
+Run with custom page count and output file:
+
+```bash
+python main.py --pages 3 --output test.csv
+```
 
 Example console output:
 
 ```text
-Pages processed: 50
-Books saved: 1000
+Pages processed: 3
+Books saved: 60
 ```
+
+## Command-line Arguments
+
+| Argument   | Description                        | Default      |
+| ---------- | ---------------------------------- | ------------ |
+| `--pages`  | Number of catalogue pages to parse | `50`         |
+| `--output` | Output CSV file name               | `result.csv` |
 
 ## Output Format
 
@@ -97,13 +112,14 @@ The log file contains information about:
 * failed page downloads
 * request errors
 * final parsing results
+* saved CSV file path
 
 Example log messages:
 
 ```text
-[2026-06-24 14:30:12] - INFO: Page downloaded: https://books.toscrape.com/catalogue/page-1.html
+[2026-06-24 14:30:12] - INFO: Page downloaded: https://books.toscrape.com/catalogue/page-1.html, status code: 200
 [2026-06-24 14:30:13] - INFO: Parsed books from page 1: 20
-[2026-06-24 14:30:20] - INFO: Books saved: 1000
+[2026-06-24 14:30:20] - INFO: CSV saved: result.csv
 ```
 
 ## Project Structure
@@ -113,20 +129,20 @@ books_parser/
 ├── main.py
 ├── README.md
 ├── requirements.txt
-├── result.csv
 └── logs/
     └── parser.log
 ```
 
 ## How It Works
 
-1. The script generates URLs for catalogue pages from 1 to 50.
-2. Each page is downloaded with `requests`.
-3. HTML content is parsed with `BeautifulSoup`.
-4. Book cards are extracted from each page.
-5. Book data is cleaned and collected into a list.
-6. All collected data is saved to `result.csv`.
-7. The script writes progress and errors to `logs/parser.log`.
+1. The script reads command-line arguments.
+2. It generates catalogue page URLs.
+3. Each page is downloaded with `requests`.
+4. HTML content is parsed with `BeautifulSoup`.
+5. Book cards are extracted from each page.
+6. Book data is cleaned and collected into a list.
+7. All collected data is saved to a CSV file.
+8. Progress and errors are written to `logs/parser.log`.
 
 ## Notes
 

@@ -154,6 +154,10 @@ def parse_all_pages(pages, output_file):
     logging.info(f"CSV saved: {output_file}")
 
 
-args = get_args()
+def main():
+    args = get_args()
+    parse_all_pages(args.pages, args.output)
 
-parse_all_pages(args.pages, Path(args.output))
+
+if __name__ == "__main__":
+    main()
