@@ -114,7 +114,7 @@ def parse_all_pages():
     all_books = []
 
     pages_count = 0
-    for page_number in range(1, 5):
+    for page_number in range(1, 51):
         url = f"https://books.toscrape.com/catalogue/page-{page_number}.html"
 
         html_text = download_html(url)
