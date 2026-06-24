@@ -1,11 +1,10 @@
 import csv
 import logging
 import requests
+import argparse
 from pathlib import Path
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
-
-path_result = Path("result.csv")
 
 BASE_URL = "https://books.toscrape.com/catalogue/"
 
@@ -14,6 +13,15 @@ Path("logs").mkdir(exist_ok=True)
 time_format = "%Y-%m-%d %H:%M:%S"
 logging.basicConfig(level=logging.INFO, filename="logs/parser.log", encoding="utf-8",
                     format="[%(asctime)s] - %(levelname)s: %(message)s", datefmt=time_format)
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--pages", type=int, default=50)
+    parser.add_argument("--output", default="result.csv")
+
+    return parser.parse_args()
 
 
 def download_html(url):
@@ -110,11 +118,11 @@ def parse_books(html_text):
     return books
 
 
-def parse_all_pages():
+def parse_all_pages(pages, output_file):
     all_books = []
 
     pages_count = 0
-    for page_number in range(1, 51):
+    for page_number in range(1, pages + 1):
         url = f"https://books.toscrape.com/catalogue/page-{page_number}.html"
 
         html_text = download_html(url)
@@ -135,7 +143,7 @@ def parse_all_pages():
         logging.info("No books found")
         return
 
-    save_csv(path_result, all_books)
+    save_csv(output_file, all_books)
 
     print(f"Pages processed: {pages_count}")
     print(f"Books saved: {len(all_books)}")
@@ -143,7 +151,9 @@ def parse_all_pages():
     logging.info(f"Pages processed: {pages_count}")
     logging.info(f"Books saved: {len(all_books)}")
 
-    logging.info(f"CSV saved: {path_result}")
+    logging.info(f"CSV saved: {output_file}")
 
 
-parse_all_pages()
+args = get_args()
+
+parse_all_pages(args.pages, Path(args.output))
