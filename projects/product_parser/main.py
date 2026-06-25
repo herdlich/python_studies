@@ -46,8 +46,7 @@ def download_html(url):
 
     except requests.RequestException as error:
         logging.error(f"Request error: {error}")
-        print(f"Request error: {error}"
-              )
+        print(f"Request error: {error}")
         return False
 
 
@@ -56,6 +55,8 @@ def get_args():
 
     parser.add_argument("--category", default="psychology")
     parser.add_argument("--output", default="result.csv")
+    parser.add_argument("--min-price", type=float, default=None)
+    parser.add_argument("--max-price", type=float, default=None)
 
     return parser.parse_args()
 
@@ -163,6 +164,23 @@ def parse_products(html_text, category_name, page_url):
     return books
 
 
+def filter_by_price(products, min_price, max_price):
+    filtered_products = []
+
+    for book in products:
+        price = float(book["price"])
+
+        if min_price is not None and price < min_price:
+            continue
+
+        if max_price is not None and price > max_price:
+            continue
+
+        filtered_products.append(book)
+
+    return filtered_products
+
+
 def main():
     args = get_args()
 
@@ -187,10 +205,17 @@ def main():
         return
 
     books = parse_products(html_category_text, args.category, category_link)
+    books = filter_by_price(books, args.min_price, args.max_price)
+
+    if not books:
+        print("No books found by price filter")
+        return
 
     save_csv(Path(args.output), books)
 
     print(f"CSV saved: {args.output}")
+
+    print(f"Saved books: {len(books)}")
 
 
 if __name__ == "__main__":
