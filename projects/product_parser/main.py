@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup as BS
 
-BASE_URL = "https://books.toscrape.com"
+BASE_URL = "https://books.toscrape.com/"
 
 Path("logs").mkdir(exist_ok=True)
 
@@ -181,6 +181,39 @@ def filter_by_price(products, min_price, max_price):
     return filtered_products
 
 
+def parse_category_pages(category_name, category_link):
+    html_text = download_html(category_link)
+
+    if not html_text:
+        return []
+
+    all_books = []
+
+    page_books = parse_products(html_text, category_name, category_link)
+    all_books.extend(page_books)
+
+    base_category_url = category_link.replace("index.html", "")
+
+    page_number = 2
+    while True:
+        page_url = base_category_url + f"page-{page_number}.html"
+        html_text = download_html(page_url)
+
+        if not html_text:
+            break
+
+        page_books = parse_products(html_text, category_name, page_url)
+
+        if not page_books:
+            break
+
+        all_books.extend(page_books)
+
+        page_number += 1
+
+    return all_books
+
+
 def main():
     args = get_args()
 
@@ -198,13 +231,12 @@ def main():
         print("Category not found")
         return
 
-    html_category_text = download_html(category_link)
+    books = parse_category_pages(args.category, category_link)
 
-    if not html_category_text:
-        print("No HTML category found")
+    if not books:
+        print("No books found")
         return
 
-    books = parse_products(html_category_text, args.category, category_link)
     books = filter_by_price(books, args.min_price, args.max_price)
 
     if not books:
