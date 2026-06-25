@@ -1,11 +1,10 @@
 import csv
 import logging
 import requests
+import argparse
 from pathlib import Path
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup as BS
-
-path_result = Path("result.csv")
 
 BASE_URL = "https://books.toscrape.com"
 
@@ -50,6 +49,15 @@ def download_html(url):
         print(f"Request error: {error}"
               )
         return False
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--category", default="psychology")
+    parser.add_argument("--output", default="result.csv")
+
+    return parser.parse_args()
 
 
 def get_text_or_empty(element):
@@ -156,6 +164,8 @@ def parse_products(html_text, category_name, page_url):
 
 
 def main():
+    args = get_args()
+
     html_text = download_html(BASE_URL)
 
     if not html_text:
@@ -163,7 +173,8 @@ def main():
         return
 
     categories = parse_categories(html_text)
-    category_link = find_category_link(categories, "psychology")
+
+    category_link = find_category_link(categories, args.category)
 
     if not category_link:
         print("Category not found")
@@ -175,9 +186,11 @@ def main():
         print("No HTML category found")
         return
 
-    books = parse_products(html_category_text, "psychology", category_link)
+    books = parse_products(html_category_text, args.category, category_link)
 
-    save_csv(path_result, books)
+    save_csv(Path(args.output), books)
+
+    print(f"CSV saved: {args.output}")
 
 
 if __name__ == "__main__":
