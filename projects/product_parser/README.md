@@ -1,28 +1,29 @@
 # Product Parser
 
-A Python command-line web scraper that collects book product data from [Books to Scrape](https://books.toscrape.com/) by selected category and saves the results to a CSV file.
+A Python parser for [Books to Scrape](https://books.toscrape.com/).
+
+The script parses book products from a selected category, supports category pagination, filters products by price, saves results to CSV, and stores parsed products in a SQLite database with duplicate protection.
 
 ## Features
 
-* Downloads pages using `requests`
+* Downloads HTML pages using `requests`
 * Parses HTML with `BeautifulSoup`
 * Extracts available product categories
 * Finds a selected category by name
-* Parses products from the selected category
-* Extracts product data:
+* Supports pagination inside a category
+* Parses product data:
 
   * title
   * price
   * category
   * stock status
   * product link
-* Supports price filtering:
-
-  * minimum price
-  * maximum price
+* Filters products by minimum and maximum price
+* Saves results to CSV
+* Saves results to SQLite database
+* Prevents duplicate database records using unique product links
 * Supports command-line arguments
-* Saves results to a CSV file
-* Writes logs to `logs/parser.log`
+* Logs request errors and failed downloads
 
 ## Technologies
 
@@ -30,6 +31,7 @@ A Python command-line web scraper that collects book product data from [Books to
 * requests
 * BeautifulSoup4
 * argparse
+* sqlite3
 * logging
 * csv
 * pathlib
@@ -37,17 +39,13 @@ A Python command-line web scraper that collects book product data from [Books to
 
 ## Installation
 
-Clone the repository or download the project files.
-
-Install dependencies:
+Clone the repository and install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
 ## Requirements
-
-The project uses the following external libraries:
 
 ```text
 requests
@@ -62,71 +60,88 @@ Run with default settings:
 python main.py
 ```
 
-By default, the script parses the `psychology` category and saves the result to:
+By default, the script parses the `psychology` category, saves results to `result.csv`, and stores products in `products.db`.
 
-```text
-result.csv
+Parse a specific category:
+
+```bash
+python main.py --category travel
 ```
 
-Run with a custom category:
+Save results to a custom CSV file:
 
 ```bash
 python main.py --category travel --output travel.csv
 ```
 
-Run with price filters:
+Filter products by price:
 
 ```bash
-python main.py --category travel --min-price 20 --max-price 50 --output travel_filtered.csv
+python main.py --category mystery --min-price 20 --max-price 40 --output mystery.csv
 ```
 
-Run with only minimum price:
+Use a custom SQLite database file:
 
 ```bash
-python main.py --category travel --min-price 40 --output expensive_travel.csv
+python main.py --category mystery --output mystery.csv --db products.db
 ```
 
-Run with only maximum price:
+Full example:
 
 ```bash
-python main.py --category travel --max-price 20 --output cheap_travel.csv
+python main.py --category mystery --min-price 20 --max-price 40 --output mystery_filtered.csv --db products.db
 ```
 
 ## Command-line Arguments
 
-| Argument      | Description               | Default      |
-| ------------- | ------------------------- | ------------ |
-| `--category`  | Product category to parse | `psychology` |
-| `--output`    | Output CSV file name      | `result.csv` |
-| `--min-price` | Minimum product price     | `None`       |
-| `--max-price` | Maximum product price     | `None`       |
+| Argument      | Description               | Default       |
+| ------------- | ------------------------- | ------------- |
+| `--category`  | Category name to parse    | `psychology`  |
+| `--output`    | Output CSV file path      | `result.csv`  |
+| `--min-price` | Minimum product price     | `None`        |
+| `--max-price` | Maximum product price     | `None`        |
+| `--db`        | SQLite database file path | `products.db` |
 
-## Output Format
+## Output CSV Format
 
-The output CSV file contains the following columns:
+The CSV file contains the following columns:
 
-```csv
+```text
 title,price,category,stock,link
 ```
 
 Example row:
 
-```csv
+```text
 It's Only the Himalayas,45.17,travel,In stock,https://books.toscrape.com/catalogue/its-only-the-himalayas_981/index.html
 ```
 
-## Logging
+## SQLite Database
 
-The script creates a log file:
+The script creates a SQLite database file and stores parsed products in the `products` table.
 
-```text
-logs/parser.log
+Table structure:
+
+```sql
+CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    price REAL,
+    category TEXT,
+    stock TEXT,
+    link TEXT UNIQUE
+);
 ```
 
-The log file contains information about:
+The `link` field is unique, so running the parser multiple times does not create duplicate product records.
 
-* failed page downloads
-* request errors
+Products are inserted using:
+
+```sql
+INSERT OR IGNORE
+```
+
+This means duplicate products are skipped automatically.
 
 ## Project Structure
 
@@ -135,24 +150,51 @@ product_parser/
 ├── main.py
 ├── README.md
 ├── requirements.txt
+├── .gitignore
 └── logs/
     └── parser.log
 ```
 
-Generated CSV files, such as `result.csv` or `travel.csv`, are created after running the script.
+Generated files such as CSV, database files, logs, and cache folders should not be committed to GitHub.
+
+Recommended `.gitignore`:
+
+```text
+__pycache__/
+*.pyc
+logs/
+*.csv
+*.db
+.venv/
+venv/
+```
 
 ## How It Works
 
-1. The script reads command-line arguments.
-2. It downloads the main page.
-3. It extracts available categories and their links.
-4. It finds the selected category.
-5. It downloads the selected category page.
-6. It parses product cards from the category page.
-7. It filters products by price if filters are provided.
-8. It saves the result to a CSV file.
+1. The script downloads the main page.
+2. It parses available book categories.
+3. It finds the selected category by name.
+4. It downloads the first category page.
+5. It parses products from the page.
+6. It generates and downloads paginated category pages such as `page-2.html`, `page-3.html`, etc.
+7. It stops when the next page is not available.
+8. It filters parsed products by price.
+9. It saves filtered products to a CSV file.
+10. It creates a SQLite database if needed.
+11. It saves products to the database.
+12. Duplicate products are ignored by unique product links.
 
 ## Notes
 
-This project is built for learning web scraping basics with Python.
+This project was built as a practice parser for learning:
+
+* HTTP requests
+* HTML parsing
+* pagination
+* command-line arguments
+* CSV export
+* SQLite storage
+* duplicate protection
+* basic project structure
+
 The target website is designed for scraping practice.

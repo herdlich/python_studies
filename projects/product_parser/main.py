@@ -1,4 +1,5 @@
 import csv
+import sqlite3
 import logging
 import requests
 import argparse
@@ -14,6 +15,45 @@ time_format = "%Y-%m-%d %H:%M:%S"
 logging.basicConfig(level=logging.INFO, filename="logs/parser.log", encoding="utf-8",
                     format="[%(asctime)s] - %(levelname)s: %(message)s",
                     datefmt=time_format)
+
+
+def db_init(db_file):
+    connection = sqlite3.connect(db_file)
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        price REAL,
+        category TEXT,
+        stock TEXT,
+        link TEXT UNIQUE
+    )
+    """)
+
+    connection.commit()
+    connection.close()
+
+
+def save_products_to_db(db_file, products):
+    connection = sqlite3.connect(db_file)
+    cursor = connection.cursor()
+
+    for product in products:
+        cursor.execute("""
+        INSERT OR IGNORE INTO products (title, price, category, stock, link)
+        VALUES (?, ?, ?, ?, ?)
+        """, (
+            product["title"],
+            float(product["price"]),
+            product["category"],
+            product["stock"],
+            product["link"]
+        ))
+
+    connection.commit()
+    connection.close()
 
 
 def save_csv(csv_file, data):
@@ -40,7 +80,6 @@ def download_html(url):
 
         else:
             logging.warning(f"Page was not downloaded: {url}, status code: {response.status_code}")
-            print(f"Page was not downloaded: {url}, status code: {response.status_code}")
 
             return False
 
@@ -57,6 +96,7 @@ def get_args():
     parser.add_argument("--output", default="result.csv")
     parser.add_argument("--min-price", type=float, default=None)
     parser.add_argument("--max-price", type=float, default=None)
+    parser.add_argument("--db", default="products.db")
 
     return parser.parse_args()
 
@@ -245,8 +285,11 @@ def main():
 
     save_csv(Path(args.output), books)
 
-    print(f"CSV saved: {args.output}")
+    db_init(args.db)
+    save_products_to_db(args.db, books)
 
+    print(f"CSV saved: {args.output}")
+    print(f"DB saved: {args.db}")
     print(f"Saved books: {len(books)}")
 
 
