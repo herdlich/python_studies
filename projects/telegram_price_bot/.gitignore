@@ -1,0 +1,5 @@
+.env
+__pychahe__/
+*.pyc
+.venv/
+venv/
