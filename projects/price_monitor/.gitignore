@@ -1,0 +1,7 @@
+__pychahe__/
+*.pyc
+logs/
+*.db
+*.csv
+.venv/
+venv/
