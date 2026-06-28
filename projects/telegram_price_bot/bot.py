@@ -5,6 +5,8 @@ from aiogram.types import Message
 
 from config import BOT_TOKEN
 
+from monitor import run_monitor
+
 router = Router()
 
 
@@ -22,7 +24,8 @@ async def help_handler(message: Message):
         "Commands:\n"
         "/start\n"
         "/help\n"
-        "/status"
+        "/status\n"
+        "/monitor <category> — check price changes for category"
     )
 
 
@@ -31,6 +34,23 @@ async def status_handler(message: Message):
     await message.answer(
         "Bot is running ✅"
     )
+
+
+@router.message(Command("monitor"))
+async def monitor_handler(message: Message):
+    parts = message.text.split()
+
+    if len(parts) < 2:
+        await message.answer("Usage: /monitor <category>")
+        return
+
+    category = parts[1]
+
+    await message.answer(f"Monitoring started for category: {category}")
+
+    result = await asyncio.to_thread(run_monitor, category)
+
+    await message.answer(result)
 
 
 async def main():
