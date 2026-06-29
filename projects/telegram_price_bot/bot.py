@@ -1,24 +1,26 @@
 import asyncio
-from aiogram import Bot, Dispatcher, Router
-from aiogram.types import FSInputFile
+from aiogram import Bot, Dispatcher, Router, html
+from aiogram.enums import ParseMode
 from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from pathlib import Path
 
 from config import BOT_TOKEN
 
-from monitor import run_monitor
+import monitor
 
 router = Router()
 
 path_csv_changes = Path("price_changes.csv")
+
+ALLOWED_USERS = {}
 
 
 @router.message(Command("start"))
 async def start_handler(message: Message):
     await message.answer(
         "Hello. Im price monitor bot.\n"
-        "So far, i can respond to basic commands"
+        "Enter /help command to view the list of commands"
     )
 
 
@@ -28,20 +30,18 @@ async def help_handler(message: Message):
         "Commands:\n"
         "/start\n"
         "/help\n"
-        "/status\n"
-        "/monitor <category> — check price changes for category"
-    )
-
-
-@router.message(Command("status"))
-async def status_handler(message: Message):
-    await message.answer(
-        "Bot is running ✅"
+        "/categories - list of available categories\n"
+        "/monitor <category> — check price changes for category\n"
+        "/id - find out your ID"
     )
 
 
 @router.message(Command("monitor"))
 async def monitor_handler(message: Message):
+    if message.from_user.id not in ALLOWED_USERS:
+        await message.answer("Access denied")
+        return
+
     parts = message.text.split()
 
     if len(parts) < 2:
@@ -52,7 +52,7 @@ async def monitor_handler(message: Message):
 
     await message.answer(f"Monitoring started for category: {category}")
 
-    result = await asyncio.to_thread(run_monitor, category)
+    result = await asyncio.to_thread(monitor.run_monitor, category)
 
     await message.answer(result)
 
@@ -62,6 +62,42 @@ async def monitor_handler(message: Message):
             report_file,
             caption="Price changes report"
         )
+
+
+@router.message(Command("id"))
+async def id_handler(message: Message):
+    user_id = message.from_user.id
+    await message.answer(
+        f"Your ID: <code>>{user_id}</code>",
+        parse_mode=ParseMode.HTML
+    )
+
+
+@router.message(Command("categories"))
+async def categories_handler(message: Message):
+    if message.from_user.id not in ALLOWED_USERS:
+        await message.answer("Access denied")
+        return
+
+    html_text = await asyncio.to_thread(monitor.download_html, monitor.BASE_URL)
+
+    if not html_text:
+        print("No HTML found")
+        return
+
+    categories = monitor.parse_categories(html_text)
+
+    if not categories:
+        await message.answer("No categories found")
+        return
+
+    text = "List of categories:\n"
+
+    for category in categories:
+        safe_category = html.quote(category['name'])
+        text += f"• <code>{safe_category}</code>\n"
+
+    await message.answer(text, parse_mode=ParseMode.HTML)
 
 
 async def main():
