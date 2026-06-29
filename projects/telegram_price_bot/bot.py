@@ -5,15 +5,13 @@ from aiogram.filters import Command
 from aiogram.types import Message, FSInputFile
 from pathlib import Path
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, ALLOWED_USERS
 
 import monitor
 
 router = Router()
 
 path_csv_changes = Path("price_changes.csv")
-
-ALLOWED_USERS = {}
 
 
 @router.message(Command("start"))
@@ -28,11 +26,12 @@ async def start_handler(message: Message):
 async def help_handler(message: Message):
     await message.answer(
         "Commands:\n"
-        "/start\n"
-        "/help\n"
-        "/categories - list of available categories\n"
+        "/start — greeting\n"
+        "/help — list of commands\n"
+        "/categories — list of available categories\n"
         "/monitor <category> — check price changes for category\n"
-        "/id - find out your ID"
+        "/last_report — send latest CSV report\n"
+        "/id — find out your ID"
     )
 
 
@@ -68,7 +67,7 @@ async def monitor_handler(message: Message):
 async def id_handler(message: Message):
     user_id = message.from_user.id
     await message.answer(
-        f"Your ID: <code>>{user_id}</code>",
+        f"Your ID: <code>{user_id}</code>",
         parse_mode=ParseMode.HTML
     )
 
@@ -82,7 +81,7 @@ async def categories_handler(message: Message):
     html_text = await asyncio.to_thread(monitor.download_html, monitor.BASE_URL)
 
     if not html_text:
-        print("No HTML found")
+        await message.answer("No HTML found")
         return
 
     categories = monitor.parse_categories(html_text)
@@ -98,6 +97,24 @@ async def categories_handler(message: Message):
         text += f"• <code>{safe_category}</code>\n"
 
     await message.answer(text, parse_mode=ParseMode.HTML)
+
+
+@router.message(Command("last_report"))
+async def last_report_handler(message: Message):
+    if message.from_user.id not in ALLOWED_USERS:
+        await message.answer("Access denied")
+        return
+
+    if path_csv_changes.exists():
+        report_file = FSInputFile(path_csv_changes)
+
+        await message.answer_document(
+            report_file,
+            caption="Last price changes report"
+        )
+
+    else:
+        await message.answer("No report found")
 
 
 async def main():
