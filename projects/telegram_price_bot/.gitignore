@@ -1,5 +1,8 @@
 .env
 __pychahe__/
 *.pyc
+logs/
+*.db
+*.csv
 .venv/
 venv/

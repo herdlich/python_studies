@@ -1,13 +1,17 @@
 import asyncio
 from aiogram import Bot, Dispatcher, Router
+from aiogram.types import FSInputFile
 from aiogram.filters import Command
 from aiogram.types import Message
+from pathlib import Path
 
 from config import BOT_TOKEN
 
 from monitor import run_monitor
 
 router = Router()
+
+path_csv_changes = Path("price_changes.csv")
 
 
 @router.message(Command("start"))
@@ -44,13 +48,20 @@ async def monitor_handler(message: Message):
         await message.answer("Usage: /monitor <category>")
         return
 
-    category = parts[1]
+    category = parts[1].lower()
 
     await message.answer(f"Monitoring started for category: {category}")
 
     result = await asyncio.to_thread(run_monitor, category)
 
     await message.answer(result)
+
+    if result.startswith("Price changes found") and path_csv_changes.exists():
+        report_file = FSInputFile(path_csv_changes)
+        await message.answer_document(
+            report_file,
+            caption="Price changes report"
+        )
 
 
 async def main():
