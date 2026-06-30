@@ -1,4 +1,6 @@
 import csv
+import time
+import logging
 import argparse
 import requests
 from pathlib import Path
@@ -8,7 +10,11 @@ from bs4 import BeautifulSoup as BS
 
 BASE_URL = "https://www.python.org/jobs/"
 
-Path("data").mkdir(exist_ok=True)
+Path("logs").mkdir(exist_ok=True)
+
+time_format = "%Y-%m-%d %H:%M:%S"
+logging.basicConfig(filename="logs/parser.log", level=logging.INFO, encoding="utf-8",
+                    format="[%(asctime)s] - %(levelname)s: %(message)s", datefmt=time_format)
 
 
 def get_args():
@@ -20,8 +26,9 @@ def get_args():
 
 
 def save_csv(csv_file, data):
+    Path(csv_file).parents.mkdir(parents=True, exist_ok=True)
     with open(csv_file, "w", encoding="utf-8", newline="") as file:
-        fieldnames = ["title", "company", "location", "category", "date", "link", "parsed_at"]
+        fieldnames = ["title", "company", "location", "category", "description", "date", "link", "parsed_at"]
 
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
@@ -41,73 +48,48 @@ def download_html(url):
 
         else:
             print(f"Page was not downloaded: {url}, status code: {response.status_code}")
+            logging.warning(f"Page was not downloaded: {url}, status code: {response.status_code}")
+
             return False
 
     except requests.RequestException as error:
         print(f"Request error: {error}")
+        logging.error(f"Request error: {error}")
+
         return False
 
 
-def get_text_or_empty(element):
-    if not element:
-        return ""
-
-    return element.get_text(strip=True)
-
-
-def parse_page(html_text):
+def parse_vacancies_links(html_text):
     if not html_text:
         print("HTML not found")
+        logging.warning("HTML not found")
+
         return []
 
     soup = BS(html_text, "html.parser")
     vacancies = soup.select("ol.list-recent-jobs > li")
 
-    job_list = []
+    links_list = []
 
     for vacancy in vacancies:
-        title_element = vacancy.find("a", href=True)
-        if not title_element:
+        link_element = vacancy.find("a", href=True)
+        if not link_element:
             continue
 
-        title = get_text_or_empty(title_element)
-
-        link = title_element["href"]
+        link = link_element["href"]
         link = urljoin(BASE_URL, link)
 
-        company_block = vacancy.find(class_="listing-company-name")
-        company_name = ""
-        if company_block and company_block.contents:
-            company_name = company_block.contents[-1].strip()
-
-        location_element = vacancy.find(class_="listing-location")
-        location = get_text_or_empty(location_element)
-
-        category_element = vacancy.find(class_="listing-company-category")
-        category = get_text_or_empty(category_element)
-
-        date_element = vacancy.find("time")
-        date = get_text_or_empty(date_element)
-
-        parsed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        vacancy_dict = {
-            "title": title,
-            "company": company_name,
-            "location": location,
-            "category": category,
-            "date": date,
-            "link": link,
-            "parsed_at": parsed_at
+        link_dict = {
+            "link": link
         }
 
-        job_list.append(vacancy_dict)
+        links_list.append(link_dict)
 
-    return job_list
+    return links_list
 
 
-def parse_all_pages(csv_output):
-    all_vacancies = []
+def parse_all_pages():
+    all_links = []
 
     page_number = 1
     while True:
@@ -117,16 +99,98 @@ def parse_all_pages(csv_output):
         if not html_text:
             break
 
-        page_vacancies = parse_page(html_text)
+        page_vacancies = parse_vacancies_links(html_text)
 
         if not page_vacancies:
             break
 
-        all_vacancies.extend(page_vacancies)
+        all_links.extend(page_vacancies)
+        logging.info(f"Parsed page: {page_url}")
 
         page_number += 1
 
-    save_csv(csv_output, all_vacancies)
+    logging.info(f"Found links: {len(all_links)}")
+
+    return all_links
+
+
+def parse_vacancy_detail(html_text, vacancy_link):
+    soup = BS(html_text, "html.parser")
+
+    company_name_tag = soup.find("span", class_="company-name")
+
+    title = ""
+    company = ""
+    if company_name_tag:
+        parts = [part.strip() for part in company_name_tag.get_text(separator="|").split("|") if part.strip()]
+        title = parts[0] if len(parts) > 0 else ""
+        company = parts[-1] if len(parts) > 1 else ""
+
+    location_tag = soup.find("span", class_="listing-location")
+    location = location_tag.get_text(strip=True) if location_tag else ""
+
+    desc_tag = soup.find("div", class_="job-description")
+    description = ""
+    if desc_tag:
+        start_h2 = desc_tag.find("h2", string="Job Description")
+
+        if start_h2:
+            description_blocks = []
+
+            for sibling in start_h2.find_next_siblings():
+                if sibling.name == "h2":
+                    break
+                if sibling.name == "p":
+                    description_blocks.append(sibling.get_text(strip=True))
+
+            description = "\n\n".join(description_blocks)
+
+    time_tag = soup.find("time")
+    date = time_tag.get_text(strip=True) if time_tag else ""
+
+    category_tag = soup.find("span", class_="listing-company-category")
+    category = category_tag.get_text(strip=True) if category_tag else ""
+
+    parsed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    vacancy_dict = {
+        "title": title,
+        "company": company,
+        "location": location,
+        "category": category,
+        "description": description,
+        "date": date,
+        "link": vacancy_link,
+        "parsed_at": parsed_at
+    }
+
+    return vacancy_dict
+
+
+def parse_vacancies_by_link():
+    all_links = parse_all_pages()
+
+    all_vacancies = []
+
+    if not all_links:
+        return []
+
+    for link in all_links:
+        vacancy_link = link["link"]
+        if not vacancy_link:
+            continue
+
+        html_text = download_html(vacancy_link)
+        if not html_text:
+            continue
+
+        vacancy_dict = parse_vacancy_detail(html_text, vacancy_link)
+
+        all_vacancies.append(vacancy_dict)
+
+        logging.info(f"Parsed vacancy: {vacancy_link}")
+
+        time.sleep(0.5)
 
     return all_vacancies
 
@@ -134,9 +198,19 @@ def parse_all_pages(csv_output):
 def main():
     args = get_args()
 
-    jobs = parse_all_pages(args.output)
+    all_vacancies = parse_vacancies_by_link()
 
-    print(f"Saved jobs: {len(jobs)}")
+    if not all_vacancies:
+        logging.warning("No vacancies found")
+
+        return
+
+    save_csv(args.output, all_vacancies)
+
+    logging.info(f"Saved vacancies: {len(all_vacancies)}")
+    logging.info(f"Output file: {args.output}")
+
+    print(f"Saved vacancies: {len(all_vacancies)}")
     print(f"Output file: {args.output}")
 
 
