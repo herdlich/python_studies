@@ -1,19 +1,24 @@
 # Python Jobs Parser
 
-A Python parser that collects job listings from the Python.org Jobs page and saves them to a CSV file.
+A Python web scraper that collects job listings from the Python.org Jobs page, opens each job detail page, extracts full job information, and saves the result to a CSV file.
 
-The project is built as a real-world web scraping practice project using `requests`, `BeautifulSoup`, `argparse`, and `csv`.
+The project is built as a real-world web scraping practice project using `requests`, `BeautifulSoup`, `argparse`, `logging`, and `csv`.
 
 ## Features
 
-* Parse job listings from Python.org Jobs
-* Automatically go through all available pages
-* Extract job data from listing cards
-* Save results to a CSV file
-* Support custom output file path
-* Handle missing HTML and empty pages
-* Normalize job links with absolute URLs
-* Add parsing timestamp for each record
+- Parse job listings from Python.org Jobs
+- Automatically go through all available listing pages
+- Collect job detail page links
+- Open each job detail page
+- Extract full job information
+- Extract job descriptions from detail pages
+- Save results to a CSV file
+- Support custom output file path
+- Handle missing HTML, empty pages, and missing fields
+- Normalize job links with absolute URLs
+- Add parsing timestamp for each record
+- Log parser activity and errors
+- Use delay between detail page requests
 
 ## Collected Fields
 
@@ -24,6 +29,7 @@ title
 company
 location
 category
+description
 date
 link
 parsed_at
@@ -37,11 +43,13 @@ python_jobs_parser/
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
-└── data/
-    └── jobs.csv
+├── data/
+│   └── jobs.csv
+└── logs/
+    └── parser.log
 ```
 
-The `data/` folder is generated automatically when the parser runs.
+The `data/` and `logs/` folders are generated automatically when the parser runs.
 
 ## Installation
 
@@ -101,22 +109,41 @@ python parser.py --output data/python_jobs.csv
 The generated CSV file contains job listings with columns like:
 
 ```text
-title,company,location,category,date,link,parsed_at
+title,company,location,category,description,date,link,parsed_at
 ```
 
 Example:
 
 ```text
-Senior Python Developer,Example Company,Remote,Developer / Engineer,29 June 2026,https://www.python.org/jobs/0000/,2026-06-30 14:14:30
+Senior Python Developer,Example Company,Remote,Developer / Engineer,Full job description text...,29 June 2026,https://www.python.org/jobs/0000/,2026-06-30 14:14:30
 ```
 
 ## How It Works
 
-1. The parser downloads the Python.org Jobs page.
-2. It extracts job cards from the HTML.
-3. For each job card, it collects title, company, location, category, date, and link.
-4. It continues parsing pages until an empty page is reached.
-5. The collected data is saved to a CSV file.
+1. The parser downloads the Python.org Jobs listing page.
+2. It extracts links to individual job detail pages.
+3. It continues parsing listing pages until an empty page is reached.
+4. It opens each job detail page.
+5. It extracts title, company, location, category, description, date, and link.
+6. It saves the collected data to a CSV file.
+7. It writes parser activity and errors to `logs/parser.log`.
+
+## Logging
+
+The parser creates a log file:
+
+```text
+logs/parser.log
+```
+
+The log contains information about:
+
+- parsed listing pages
+- found job links
+- parsed vacancy detail pages
+- request errors
+- empty results
+- saved vacancies
 
 ## Dependencies
 
@@ -131,8 +158,10 @@ This parser is intended for educational purposes and works with publicly availab
 
 It does not use browser automation, login, CAPTCHA bypassing, or private data access.
 
+A small delay is used between detail page requests to avoid sending too many requests too quickly.
+
 ## Status
 
-Project version: `v1`
+Project version: `v2`
 
-The current version parses all available listing pages and exports job data to CSV.
+The current version parses all available listing pages, opens each job detail page, extracts job descriptions, logs parser activity, and exports clean job data to CSV.

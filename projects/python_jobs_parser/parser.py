@@ -26,7 +26,7 @@ def get_args():
 
 
 def save_csv(csv_file, data):
-    Path(csv_file).parents.mkdir(parents=True, exist_ok=True)
+    Path(csv_file).parent.mkdir(parents=True, exist_ok=True)
     with open(csv_file, "w", encoding="utf-8", newline="") as file:
         fieldnames = ["title", "company", "location", "category", "description", "date", "link", "parsed_at"]
 
