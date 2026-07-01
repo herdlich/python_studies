@@ -24,6 +24,7 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--db", default="data/news.db")
+    parser.add_argument("--pages", type=int, default=3)
 
     return parser.parse_args()
 
@@ -84,6 +85,18 @@ def get_text_or_empty(element):
     return element.get_text(strip=True)
 
 
+def get_next_page_url(html_text):
+    soup = BS(html_text, "html.parser")
+    more_link = soup.select_one("a.morelink")
+    if not more_link:
+        return None
+
+    link = more_link.get("href") if more_link else False
+    link = urljoin(BASE_URL, link)
+
+    return link
+
+
 def parse_items(html_text):
     soup = BS(html_text, "html.parser")
     items = soup.select("tr.athing.submission")
@@ -135,6 +148,28 @@ def parse_items(html_text):
         all_news_page.append(new_dict)
 
     return all_news_page
+
+
+def parse_pages(start_url, pages):
+    all_items = []
+    html_text = download_html(start_url)
+    if not html_text:
+        return []
+
+    for page in range(pages):
+        all_news_page = parse_items(html_text)
+
+        all_items.extend(all_news_page)
+
+        next_link = get_next_page_url(html_text)
+        if not next_link:
+            break
+
+        html_text = download_html(next_link)
+        if not html_text:
+            break
+
+    return all_items
 
 
 def item_exists(db_file, item_id):
@@ -195,23 +230,18 @@ def main():
 
     db_init(args.db)
 
-    html_text = download_html(BASE_URL)
-    if not html_text:
-        print("No HTML found")
-        logging.warning("No HTML found")
-        return
+    all_pages = parse_pages(BASE_URL, args.pages)
 
-    all_news_page = parse_items(html_text)
-    new_items = find_new_items(args.db, all_news_page)
+    new_items = find_new_items(args.db, all_pages)
 
-    save_csv(path_csv, all_news_page)
+    save_csv(path_csv, all_pages)
     save_csv("data/new_items.csv", new_items)
 
-    print(f"Found news: {len(all_news_page)}")
+    print(f"Found news: {len(all_pages)}")
     print(f"New news: {len(new_items)}")
     print(f"Output file: {path_csv}")
 
-    logging.info(f"Found news: {len(all_news_page)}")
+    logging.info(f"Found news: {len(all_pages)}")
     logging.info(f"Output file: {path_csv}")
 
 
