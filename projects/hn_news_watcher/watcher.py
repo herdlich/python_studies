@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urljoin
-from bs4 import BeautifulSoup as BS
+from bs4 import BeautifulSoup as Bs
 
 BASE_URL = "https://news.ycombinator.com/newest"
 HN_BASE_URL = "https://news.ycombinator.com/"
@@ -16,20 +16,20 @@ time_format = "%Y-%m-%d %H:%M:%S"
 logging.basicConfig(filename="logs/watcher.log", level=logging.INFO, encoding="utf-8",
                     format="[%(asctime)s] - %(levelname)s: %(message)s", datefmt=time_format)
 
-path_csv = Path("data/news.csv")
-path_csv.parent.mkdir(exist_ok=True)
-
 
 def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--db", default="data/news.db")
+    parser.add_argument("--output", default="data/news.csv")
+    parser.add_argument("--new-output", default="data/new_items.csv")
     parser.add_argument("--pages", type=int, default=3)
 
     return parser.parse_args()
 
 
 def save_csv(csv_file, data):
+    Path(csv_file).parent.mkdir(parents=True, exist_ok=True)
     with open(csv_file, "w", encoding="utf-8", newline="") as file:
         fieldnames = ["title", "link", "age", "author", "points", "comments", "item_id", "parsed_at"]
 
@@ -86,7 +86,7 @@ def get_text_or_empty(element):
 
 
 def get_next_page_url(html_text):
-    soup = BS(html_text, "html.parser")
+    soup = Bs(html_text, "html.parser")
     more_link = soup.select_one("a.morelink")
     if not more_link:
         return None
@@ -98,7 +98,7 @@ def get_next_page_url(html_text):
 
 
 def parse_items(html_text):
-    soup = BS(html_text, "html.parser")
+    soup = Bs(html_text, "html.parser")
     items = soup.select("tr.athing.submission")
 
     all_news_page = []
@@ -234,15 +234,15 @@ def main():
 
     new_items = find_new_items(args.db, all_pages)
 
-    save_csv(path_csv, all_pages)
-    save_csv("data/new_items.csv", new_items)
+    save_csv(args.output, all_pages)
+    save_csv(args.new_output, new_items)
 
     print(f"Found news: {len(all_pages)}")
     print(f"New news: {len(new_items)}")
-    print(f"Output file: {path_csv}")
+    print(f"Output file: {args.output}")
 
     logging.info(f"Found news: {len(all_pages)}")
-    logging.info(f"Output file: {path_csv}")
+    logging.info(f"Output file: {args.output}")
 
 
 if __name__ == "__main__":
