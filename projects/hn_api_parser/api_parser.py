@@ -58,9 +58,8 @@ def transform_items(data):
             if len(updated_at) > 9:
                 updated_at = updated_at[:10]
 
-            link = hit.get("url") or f"https://news.ycombinator.com/item?id={object_id}"
-
             object_id = hit.get("objectID", "")
+            link = hit.get("url") or f"https://news.ycombinator.com/item?id={object_id}"
 
             comments_count = hit.get("num_comments", "")
             points = hit.get("points", "")
@@ -71,7 +70,7 @@ def transform_items(data):
                 "link": link,
                 "author": author,
                 "points": points,
-                "comments": comments_count,
+                "comments_count": comments_count,
                 "created_at": created_at,
                 "updated_at": updated_at
             }
@@ -85,7 +84,7 @@ def save_csv(csv_file, data_to_csv):
     Path(csv_file).parent.mkdir(parents=True, exist_ok=True)
 
     with open(csv_file, "w", encoding="utf-8", newline="") as file:
-        fieldnames = ["object_id", "title", "link", "author", "points", "comments", "created_at", "updated_at"]
+        fieldnames = ["object_id", "title", "link", "author", "points", "comments_count", "created_at", "updated_at"]
         writer = csv.DictWriter(file, fieldnames=fieldnames)
 
         writer.writeheader()
@@ -105,7 +104,7 @@ def db_init(db_file):
         link TEXT,
         author TEXT,
         points INTEGER,
-        comments INTEGER,
+        comments_count INTEGER,
         created_at TEXT,
         updated_at TEXT
         )
@@ -122,7 +121,7 @@ def save_to_db(db_file, items):
     cursor = connection.cursor()
 
     cursor.executemany("""
-    INSERT OR IGNORE INTO news (object_id, title, link, author, points, comments, created_at, updated_at)
+    INSERT OR IGNORE INTO news (object_id, title, link, author, points, comments_count, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, [
         (
@@ -131,7 +130,7 @@ def save_to_db(db_file, items):
             item["link"],
             item["author"],
             item["points"],
-            item["comments"],
+            item["comments_count"],
             item["created_at"],
             item["updated_at"]
         )
@@ -150,13 +149,13 @@ def main():
     all_news = []
 
     for page_num in range(args.pages):
-        row_items = fetch_data(args.query, page=page_num)
-        if not row_items or not row_items.get("hits"):
+        raw_items = fetch_data(args.query, page=page_num)
+        if not raw_items or not raw_items.get("hits"):
             print("No more data or error encountered")
             logging.warning("No more data or error encountered")
             break
 
-        clean_items = transform_items(row_items)
+        clean_items = transform_items(raw_items)
 
         all_news.extend(clean_items)
 
