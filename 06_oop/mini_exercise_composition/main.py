@@ -1,0 +1,25 @@
+class Product:
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+
+class ShoppingCart:
+    def __init__(self):
+        self.products = []
+
+    def add_product(self, product):
+        if not isinstance(product, Product):
+            raise TypeError("Product must be of type Product")
+        self.products.append(product)
+
+    def remove_product(self, name):
+        if name not in self.products:
+            raise RuntimeError(f'Product {name} not in shopping cart')
+
+        self.products.remove(name)
+
+    def get_products(self):
+        return self.products
